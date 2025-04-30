@@ -138,6 +138,8 @@ def update_time(n):
     return time_display, progress_display
 
 
+application = app
+
 if __name__ == "__main__":
-    print(f"🔄 Starting 48-hour latency monitoring ({MAX_DURATION_SECONDS} seconds)...")
     app.run(debug=True)
+
