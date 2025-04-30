@@ -138,7 +138,7 @@ def update_time(n):
     return time_display, progress_display
 
 
-application = app
+application = app  # required for Render
 
 if __name__ == "__main__":
     app.run(debug=True)
