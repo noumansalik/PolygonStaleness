@@ -9,7 +9,7 @@ import time
 
 # --- Config ---
 API_URL = "https://exs.redenvelope.dev/polygon/rate/USD-AUD/100"
-HEALTHY_THRESHOLD = 1000  # ms
+HEALTHY_THRESHOLD = 2000  # ms
 MAX_DURATION_SECONDS = 172800  # 2 days = 48 hours
 REQUEST_INTERVAL_MS = 1000     # 1 second
 MAX_RECORDS = MAX_DURATION_SECONDS
