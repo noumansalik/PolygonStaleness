@@ -19,5 +19,5 @@ register_callbacks(app)
 # Expose for Gunicorn
 application = app
 
-if __name__ == "__main__":
+if __name__ == "main":
     app.run(debug=True)
