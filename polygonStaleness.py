@@ -10,12 +10,11 @@ import time
 # --- Config ---
 API_URL = "https://exs.redenvelope.dev/polygon/rate/USD-AUD/100"
 HEALTHY_THRESHOLD = 2000  # ms
-MAX_DURATION_SECONDS = 172800  # 2 days = 48 hours
+MAX_DURATION_SECONDS = 172800  # 2 days
 REQUEST_INTERVAL_MS = 1000     # 1 second
-MAX_RECORDS = MAX_DURATION_SECONDS
 LATENCY_KEY = "Latency (ms)"
 
-# Initialize app
+# Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = "48-Hour Live Latency Monitor"
 
@@ -39,7 +38,7 @@ app.layout = dbc.Container([
     ])
 ], fluid=True)
 
-# --- Callback 1: Fetch latency + append to store + save CSV every 6h ---
+# --- Callback 1: Fetch latency + store + 6h backups ---
 @app.callback(
     Output("data-store", "data"),
     Input("interval", "n_intervals"),
@@ -47,7 +46,6 @@ app.layout = dbc.Container([
 )
 def fetch_and_store(n):
     if n >= MAX_DURATION_SECONDS:
-        # Final save
         pd.DataFrame(data_store).to_csv("latency_final.csv", index=False)
         print("✅ Final data saved. Monitoring complete.")
         return data_store
@@ -62,14 +60,12 @@ def fetch_and_store(n):
     timestamp = datetime.now().isoformat()
     data_store.append({"Timestamp": timestamp, LATENCY_KEY: latency})
 
-    # Save snapshot every 6 hours
     if n % 21600 == 0 and n != 0:
         filename = f"latency_snapshot_{n // 3600:02d}h.csv"
         pd.DataFrame(data_store).to_csv(filename, index=False)
         print(f"💾 Saved 6-hour backup: {filename}")
 
-    return data_store[-MAX_RECORDS:]  # keep memory usage bounded
-
+    return data_store
 
 # --- Callback 2: Update Graphs ---
 @app.callback(
@@ -89,14 +85,12 @@ def update_graphs(data):
         return dash.no_update, dash.no_update, dash.no_update
 
     df["Health"] = df[LATENCY_KEY].apply(
-        lambda x: "Healthy" if x <= HEALTHY_THRESHOLD else "Unhealthy"
+        lambda x: "Healthy" if x < HEALTHY_THRESHOLD else "Unhealthy"
     )
 
-    # Line chart
     line_fig = px.line(df, x="Timestamp", y=LATENCY_KEY, color="Health",
                        title="📈 Latency Over Time")
 
-    # Pie chart
     health_counts = df["Health"].value_counts()
     pie_fig = px.pie(
         names=health_counts.index,
@@ -106,7 +100,6 @@ def update_graphs(data):
         color_discrete_map={"Healthy": "#4CAF50", "Unhealthy": "#F44336"}
     )
 
-    # Bar chart
     max_latency = df[LATENCY_KEY].max()
     avg_latency = df[LATENCY_KEY].mean()
     bar_fig = px.bar(
@@ -118,8 +111,7 @@ def update_graphs(data):
 
     return line_fig, pie_fig, bar_fig
 
-
-# --- Callback 3: Update Time Elapsed, Remaining, and % ---
+# --- Callback 3: Time Elapsed / Remaining ---
 @app.callback(
     Output("time-info", "children"),
     Output("progress-info", "children"),
